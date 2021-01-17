@@ -1,4 +1,4 @@
-defmodule Guess.GameServer do
+defmodule JustOne.GameServer do
   @moduledoc """
   A game server process that holds a `Game` struct as its state.
   """
@@ -24,12 +24,45 @@ defmodule Guess.GameServer do
     GenServer.call(via_tuple(game_name), :summary)
   end
 
-  def mark(game_name, phrase, player) do
-    GenServer.call(via_tuple(game_name), {:mark, phrase, player})
+  def give_clue(game_name, word, player) do
+    GenServer.call(via_tuple(game_name), {:clue, word, player})
+  end
+
+  def guess(game_name, word, player) do
+    GenServer.call(via_tuple(game_name), {:guess, word, player})
+  end
+
+
+  def next_round(game_name) do
+    GenServer.call(via_tuple(game_name), :next)
   end
 
   def handle_call(:summary, _from, game) do
     {:reply, summarize(game), game, @timeout}
+  end
+
+
+  def handle_call({:clue, word, player}, _from, game) do
+    new_game = JustOne.Game.give_clue(game, word, player)
+
+    :ets.insert(:games_table, {my_game_name(), new_game})
+    {:reply, summarize(new_game), new_game, @timeout}
+  end
+
+
+  def handle_call({:guess, word, player}, _from, game) do
+    new_game = JustOne.Game.guess(game, word, player)
+
+    :ets.insert(:games_table, {my_game_name(), new_game})
+    {:reply, summarize(new_game), new_game, @timeout}
+  end
+
+
+  def handle_call(:next, _from, game) do
+    new_game = JustOne.Game.next_round(game)
+
+    :ets.insert(:games_table, {my_game_name(), new_game})
+    {:reply, summarize(new_game), new_game, @timeout}
   end
 
   def summarize(game) do
@@ -40,7 +73,7 @@ defmodule Guess.GameServer do
   Returns a tuple used to register and lookup a game server process by name.
   """
   def via_tuple(game_name) do
-    {:via, Registry, {Guess.GameRegistry, game_name}}
+    {:via, Registry, {JustOne.GameRegistry, game_name}}
   end
 
   @doc """
@@ -61,7 +94,7 @@ defmodule Guess.GameServer do
     game =
       case :ets.lookup(:games_table, game_name) do
         [] ->
-          game = Guess.Game.new()
+          game = JustOne.Game.new()
           :ets.insert(:games_table, {game_name, game})
           game
 
@@ -89,6 +122,6 @@ defmodule Guess.GameServer do
   end
 
   defp my_game_name do
-    Registry.keys(Guess.GameRegistry, self()) |> List.first
+    Registry.keys(JustOne.GameRegistry, self()) |> List.first
   end
 end

@@ -1,8 +1,8 @@
-defmodule GuessTest do
+defmodule JustOneTest do
   use ExUnit.Case
-  doctest Guess
+  doctest JustOne
 
   test "greets the world" do
-    assert Guess.hello() == :world
+    assert JustOne.hello() == :world
   end
 end

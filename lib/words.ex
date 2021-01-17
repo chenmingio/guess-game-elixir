@@ -1,4 +1,4 @@
-defmodule Guess.Words do
+defmodule JustOne.Words do
 
   def read_words do
     "../data/emotion-words.txt"
